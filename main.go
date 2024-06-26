@@ -7,9 +7,8 @@ import (
 	"github.com/tamjidrahman/ws_server"
 )
 
-const OPENAI_API_KEY = os.Getenv("OPENAI_API_KEY")
-
 func main() {
+	OPENAI_API_KEY := os.Getenv("OPENAI_API_KEY")
 	// agent := chat_agent.MockChatAgent{}
 	// agent := chat_agent.OllamaAgent{Url: "http://localhost:11434/api/generate", Model: "mistral"}
 	agent := chat_agent.NewOpenAIClient(OPENAI_API_KEY)
