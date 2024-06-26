@@ -17,16 +17,15 @@ var upgrader = websocket.Upgrader{
 }
 
 var clients = make(map[*websocket.Conn]bool)
-var broadcast = make(chan chat_agent.ChatMessage)
 
 func Serve(chatAgent chat_agent.ChatAgent) {
-	conversation := chat_agent.ChatCoversation{ChatMessages: []chat_agent.ChatMessage{}}
+	conversation := chat_agent.ChatConversation{ChatMessages: []chat_agent.ChatMessage{}}
+	conversationHandler := newWSConversationHandler(&conversation)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { serveHome(conversationHandler, w, r) })
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { serveHome(&conversation, w, r) })
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) { handleConnections(conversationHandler, chatAgent, w, r) })
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) { handleConnections(&conversation, chatAgent, w, r) })
-
-	go handleMessages()
+	go handleMessages(conversationHandler.GetBroadcast())
 
 	fmt.Println("Server running on port 8080")
 	err := http.ListenAndServe(":8080", nil)
@@ -36,7 +35,7 @@ func Serve(chatAgent chat_agent.ChatAgent) {
 }
 
 // serveHome serves the HTML page
-func serveHome(conversation *chat_agent.ChatCoversation, w http.ResponseWriter, r *http.Request) {
+func serveHome(conversationHandler ConversationHandler, w http.ResponseWriter, r *http.Request) {
 	tmpl, err := os.ReadFile("./template.html")
 	if err != nil {
 		http.Error(w, "Could not read template file"+err.Error(), http.StatusInternalServerError)
@@ -55,7 +54,7 @@ func serveHome(conversation *chat_agent.ChatCoversation, w http.ResponseWriter, 
 		ChatMessages []chat_agent.ChatMessage
 	}{
 		WebSocketURL: "ws://" + r.Host + "/ws",
-		ChatMessages: conversation.ChatMessages,
+		ChatMessages: conversationHandler.GetConversation().ChatMessages,
 	})
 	if err != nil {
 		fmt.Println(err)
@@ -63,7 +62,7 @@ func serveHome(conversation *chat_agent.ChatCoversation, w http.ResponseWriter, 
 	}
 }
 
-func handleConnections(chatConversation *chat_agent.ChatCoversation, chatAgent chat_agent.ChatAgent, w http.ResponseWriter, r *http.Request) {
+func handleConnections(conversationHandler ConversationHandler, chatAgent chat_agent.ChatAgent, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err)
@@ -81,21 +80,19 @@ func handleConnections(chatConversation *chat_agent.ChatCoversation, chatAgent c
 			delete(clients, conn)
 			return
 		}
-		chatConversation.AddMessage(msg)
-		broadcast <- msg
-		chatAgent.AddToMessages(msg) // Should just read from conversation
-		if (chatAgent).ShouldRespond(msg.Message) {
-			response := (chatAgent).Query(msg)
+		conversationHandler.AddMessage(msg)
+		if (chatAgent).ShouldRespond(conversationHandler.GetConversation()) {
+			response := (chatAgent).Query(conversationHandler.GetConversation())
 			fmt.Println("Response: ", response)
-			chatConversation.AddMessage(response)
-			broadcast <- response
+			conversationHandler.AddMessage(response)
 		}
 	}
 }
 
-func handleMessages() {
+func handleMessages(broadcast *chan chat_agent.ChatMessage) {
 	for {
-		msg := <-broadcast
+		msg := <-*broadcast
+		fmt.Println("Broadcasting message: ", msg)
 		for client := range clients {
 			err := client.WriteJSON(msg)
 			if err != nil {

@@ -30,44 +30,50 @@ type ChatResponse struct {
 
 // OpenAIClient is a client for interacting with the OpenAI API.
 type OpenAIClient struct {
-	APIKey         string
-	OpenAIMessages []OpenAIMessage
+	APIKey string
+	Prompt string
 }
 
 // NewOpenAIClient creates a new OpenAI client.
 func NewOpenAIClient(apiKey string) OpenAIClient {
 	prompt_string := "You are an AI assistant named Larry that helps Tamjid and Laura with their household logistics"
-	messages := []OpenAIMessage{{Role: "user", Content: prompt_string}}
 
 	return OpenAIClient{
-		APIKey:         apiKey,
-		OpenAIMessages: messages,
+		APIKey: apiKey,
+		Prompt: prompt_string,
 	}
 }
 
-func (client *OpenAIClient) ShouldRespond(query string) bool {
-	query = strings.TrimSpace(query)
+func (client *OpenAIClient) ShouldRespond(chatConversation *ChatConversation) bool {
+
+	last_message := chatConversation.ChatMessages[len(chatConversation.ChatMessages)-1].Message
+	query := strings.TrimSpace(last_message)
 	return strings.HasPrefix(query, "@larry")
 }
 
-func (client *OpenAIClient) AddToMessages(message ChatMessage) {
-	client.OpenAIMessages = append(client.OpenAIMessages, OpenAIMessage{Role: "user", Content: message.Username + ": " + message.Message})
+func (client *OpenAIClient) CreateOpenAIMessages(chatConversation *ChatConversation) []OpenAIMessage {
+
+	var openAIMessages []OpenAIMessage
+	openAIMessages = append(openAIMessages, OpenAIMessage{Role: "system", Content: client.Prompt})
+	for _, msg := range chatConversation.ChatMessages {
+		openAIMessages = append(openAIMessages, OpenAIMessage{Role: "user", Content: msg.Username + ": " + msg.Message})
+	}
+	return openAIMessages
 }
 
-func (client *OpenAIClient) CreateMessage(message string) ChatMessage {
-	client.OpenAIMessages = append(client.OpenAIMessages, OpenAIMessage{Role: "assistant", Content: message})
-	return ChatMessage{Username: "Larry", Message: message}
+func (client *OpenAIClient) CreateMessage(content string) ChatMessage {
+	return ChatMessage{Username: "Larry", Message: content}
 }
 
 // Query sends a chat completion request to the OpenAI API and returns the response.
-func (client *OpenAIClient) Query(message ChatMessage) ChatMessage {
+func (client *OpenAIClient) Query(chatConversation *ChatConversation) ChatMessage {
 	url := "https://api.openai.com/v1/chat/completions"
 
-	client.OpenAIMessages = append(client.OpenAIMessages, OpenAIMessage{Role: "user", Content: message.Username + ": " + message.Message})
+	openAIMessages := client.CreateOpenAIMessages(chatConversation)
 
 	chatRequest := ChatRequest{
 		Model:          "gpt-4o",
-		OpenAIMessages: client.OpenAIMessages,
+		OpenAIMessages: openAIMessages,
 	}
 
 	requestBody, err := json.Marshal(chatRequest)
