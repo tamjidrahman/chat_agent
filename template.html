@@ -8,8 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f9;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #e0f7fa; /* Light Cyan background */
+        color: #004d40; /* Dark Teal text */
         display: flex;
         justify-content: center;
         align-items: center;
@@ -19,117 +20,147 @@
       .chat-container {
         width: 90%;
         max-width: 600px;
-        height: 80vh; /* Limit the height of the chat container */
-        background: #fff;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        border-radius: 8px;
+        height: 80vh;
+        background: #ffffff; /* White background */
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
         display: flex;
         flex-direction: column;
-        overflow: hidden; /* Ensures no overflow */
+        overflow: hidden;
       }
       .chat-header {
-        background: #007bff;
-        color: #fff;
+        background: #00838f; /* Dark Cyan background */
+        color: #ffffff; /* White text */
         padding: 15px;
         text-align: center;
-        flex-shrink: 0; /* Prevents the header from shrinking */
+        font-size: 1.5em;
+        font-weight: bold;
       }
       #chat-log {
         flex: 1;
         padding: 20px;
         overflow-y: auto;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid #b2ebf2; /* Light Cyan border */
       }
       .chat-message {
         margin-bottom: 10px;
         padding: 10px;
-        border-radius: 5px;
-        background: #f1f1f1;
+        border-radius: 8px;
+        background: #b2ebf2; /* Light Cyan background */
         word-wrap: break-word;
+        color: #004d40; /* Dark Teal text */
       }
       .chat-message.username {
-        background: #007bff;
-        color: #fff;
+        background: #00838f; /* Dark Cyan background */
+        color: #ffffff; /* White text */
         align-self: flex-end;
         text-align: right;
       }
       .chat-message .username-text {
         font-weight: bold;
         display: block;
+        margin-bottom: 5px;
       }
       #chat-form {
         display: flex;
         padding: 20px;
-        background: #f9f9f9;
-        flex-shrink: 0; /* Prevents the form from shrinking */
-        flex-direction: column; /* Column layout on small screens */
+        background: #b2ebf2; /* Light Cyan background */
+        flex-shrink: 0;
+        flex-direction: column;
       }
       #chat-form input,
       #chat-form button {
-        margin-bottom: 10px; /* Margin between form elements */
+        margin-bottom: 10px;
+        font-size: 16px; /* Prevent zooming on focus */
       }
-      #username,
+      #username-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+      }
+      #username {
+        padding: 10px;
+        border: 1px solid #004d40; /* Dark Teal border */
+        border-radius: 4px;
+        background: #e0f7fa; /* Light Cyan background */
+        color: #004d40; /* Dark Teal text */
+        width: 100%;
+        box-sizing: border-box;
+      }
+      #message-container {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+      }
       #message {
         padding: 10px;
-        border: 1px solid #ddd;
+        border: 1px solid #004d40; /* Dark Teal border */
         border-radius: 4px;
+        background: #e0f7fa; /* Light Cyan background */
+        color: #004d40; /* Dark Teal text */
         width: 100%;
         box-sizing: border-box;
       }
       button {
         padding: 10px 20px;
-        background: #007bff;
+        background: #00838f; /* Dark Cyan background */
         border: none;
-        color: #fff;
+        color: #ffffff; /* White text */
         border-radius: 4px;
         cursor: pointer;
-        width: 100%; /* Full width button */
+        width: 100%;
         box-sizing: border-box;
+        font-size: 1em;
       }
       button:hover {
-        background: #0056b3;
+        background: #006064; /* Darker Cyan background */
       }
       @media (min-width: 600px) {
         #chat-form {
-          flex-direction: row; /* Row layout on larger screens */
+          flex-direction: row;
         }
-        #username,
+        #username-container {
+          flex: 1;
+        }
+        #message-container {
+          flex-direction: row;
+        }
         #message {
           flex: 1;
-          margin-right: 10px; /* Margin between input fields on larger screens */
-        }
-        #message {
-          flex: 3;
+          margin-right: 10px;
         }
         button {
-          margin-right: 0; /* Remove margin for button on larger screens */
-          width: auto; /* Default width for button on larger screens */
+          margin-right: 0;
+          width: auto;
         }
       }
     </style>
   </head>
   <body>
     <div class="chat-container">
-      <div class="chat-header">
-        <h1>Chat with Larry</h1>
-      </div>
+      <div class="chat-header">Chat with Larry</div>
       <div id="chat-log">
         <!-- Messages will be displayed here -->
       </div>
       <form id="chat-form">
-        <input
-          type="text"
-          id="username"
-          autocomplete="off"
-          placeholder="Username"
-        />
-        <input
-          type="text"
-          id="message"
-          autocomplete="off"
-          placeholder="Type a message..."
-        />
-        <button type="submit">Send</button>
+        <div id="username-container">
+          <input
+            type="text"
+            id="username"
+            autocomplete="off"
+            placeholder="Username"
+          />
+          <button type="button" id="set-username">Set Username</button>
+        </div>
+        <div id="message-container">
+          <input
+            type="text"
+            id="message"
+            autocomplete="off"
+            placeholder="Type a message..."
+          />
+          <button type="submit">Send</button>
+        </div>
       </form>
     </div>
 
@@ -138,9 +169,13 @@
       const chatForm = document.getElementById("chat-form");
       const messageInput = document.getElementById("message");
       const usernameInput = document.getElementById("username");
+      const setUsernameButton = document.getElementById("set-username");
+      const messageContainer = document.getElementById("message-container");
       const converter = new showdown.Converter();
 
-      const ws = new WebSocket(`ws://${window.location.host}/ws`);
+      // Set WebSocket URL dynamically based on the current location
+      const wsUrl = `ws://${window.location.host}/ws`;
+      const ws = new WebSocket(wsUrl);
 
       ws.onmessage = function (event) {
         const msg = JSON.parse(event.data);
@@ -149,19 +184,29 @@
         if (msg.username === usernameInput.value) {
           message.classList.add("username");
         }
-        message.innerHTML = `<span class="username-text">${msg.username}</span> ${converter.makeHtml(msg.message)}`;
+        message.innerHTML = `<span class="username-text">${msg.username}:</span> ${converter.makeHtml(msg.message)}`;
         chatLog.appendChild(message);
         chatLog.scrollTop = chatLog.scrollHeight;
       };
 
+      setUsernameButton.onclick = function () {
+        if (usernameInput.value.trim() !== "") {
+          usernameInput.style.display = "none";
+          setUsernameButton.style.display = "none";
+          messageContainer.style.display = "flex";
+        }
+      };
+
       chatForm.onsubmit = function (event) {
         event.preventDefault();
-        const msg = {
-          username: usernameInput.value,
-          message: messageInput.value,
-        };
-        ws.send(JSON.stringify(msg));
-        messageInput.value = "";
+        if (usernameInput.value.trim() !== "") {
+          const msg = {
+            username: usernameInput.value,
+            message: messageInput.value,
+          };
+          ws.send(JSON.stringify(msg));
+          messageInput.value = "";
+        }
       };
     </script>
   </body>
