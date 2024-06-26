@@ -2,6 +2,8 @@ package ws_server
 
 import (
 	"fmt"
+	"html/template"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -18,7 +20,7 @@ var clients = make(map[*websocket.Conn]bool)
 var broadcast = make(chan chat_agent.Message)
 
 func Serve(chatAgent chat_agent.ChatAgent) {
-	http.HandleFunc("/", homePage)
+	http.HandleFunc("/", serveHome)
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) { handleConnections(chatAgent, w, r) })
 
@@ -31,8 +33,28 @@ func Serve(chatAgent chat_agent.ChatAgent) {
 	}
 }
 
-func homePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Server running")
+// serveHome serves the HTML page
+func serveHome(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := ioutil.ReadFile("./template.html")
+	if err != nil {
+		http.Error(w, "Could not read template file"+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	t, err := template.New("home").Parse(string(tmpl))
+	if err != nil {
+		http.Error(w, "Could not parse template", http.StatusInternalServerError)
+		return
+	}
+
+	err = t.Execute(w, struct {
+		WebSocketURL string
+	}{
+		WebSocketURL: "ws://" + r.Host + "/ws",
+	})
+	if err != nil {
+		http.Error(w, "Could not execute template", http.StatusInternalServerError)
+	}
 }
 
 func handleConnections(chatAgent chat_agent.ChatAgent, w http.ResponseWriter, r *http.Request) {

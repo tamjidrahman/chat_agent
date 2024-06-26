@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Go Chat</title>
+    <script src="https://unpkg.com/htmx.org@1.5.0"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .chat-container {
+        width: 90%;
+        max-width: 600px;
+        background: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .chat-header {
+        background: #007bff;
+        color: #fff;
+        padding: 15px;
+        text-align: center;
+      }
+      #chat-log {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        border-bottom: 1px solid #eee;
+      }
+      .chat-message {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        background: #f1f1f1;
+      }
+      .chat-message.username {
+        background: #007bff;
+        color: #fff;
+      }
+      #chat-form {
+        display: flex;
+        padding: 20px;
+        background: #f9f9f9;
+      }
+      #username,
+      #message {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-right: 10px;
+      }
+      #message {
+        flex: 3;
+      }
+      button {
+        padding: 10px 20px;
+        background: #007bff;
+        border: none;
+        color: #fff;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="chat-header">
+        <h1>Chat Room</h1>
+      </div>
+      <div id="chat-log">
+        <!-- Messages will be displayed here -->
+      </div>
+      <form id="chat-form">
+        <input
+          type="text"
+          id="username"
+          autocomplete="off"
+          placeholder="Username"
+        />
+        <input
+          type="text"
+          id="message"
+          autocomplete="off"
+          placeholder="Type a message..."
+        />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+
+    <script>
+      const chatLog = document.getElementById("chat-log");
+      const chatForm = document.getElementById("chat-form");
+      const messageInput = document.getElementById("message");
+      const usernameInput = document.getElementById("username");
+
+      const ws = new WebSocket("{{ .WebSocketURL }}");
+
+      ws.onmessage = function (event) {
+        const msg = JSON.parse(event.data);
+        const message = document.createElement("div");
+        message.classList.add("chat-message");
+        if (msg.username === usernameInput.value) {
+          message.classList.add("username");
+        }
+        message.textContent = `${msg.username}: ${msg.message}`;
+        chatLog.appendChild(message);
+        chatLog.scrollTop = chatLog.scrollHeight;
+      };
+
+      chatForm.onsubmit = function (event) {
+        event.preventDefault();
+        const msg = {
+          username: usernameInput.value,
+          message: messageInput.value,
+        };
+        ws.send(JSON.stringify(msg));
+        messageInput.value = "";
+      };
+    </script>
+  </body>
+</html>
