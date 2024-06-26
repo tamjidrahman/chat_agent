@@ -83,7 +83,6 @@ func handleConnections(conversationHandler ConversationHandler, chatAgent chat_a
 		conversationHandler.AddMessage(msg)
 		if (chatAgent).ShouldRespond(conversationHandler.GetConversation()) {
 			response := (chatAgent).Query(conversationHandler.GetConversation())
-			fmt.Println("Response: ", response)
 			conversationHandler.AddMessage(response)
 		}
 	}
