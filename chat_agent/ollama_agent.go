@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -49,7 +50,7 @@ func generateRequest(url string, payload map[string]interface{}) (Response, erro
 		return Response{}, fmt.Errorf("received non-200 response code: %d", resp.StatusCode)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return Response{}, fmt.Errorf("error reading response body: %w", err)
 	}
@@ -64,12 +65,13 @@ func generateRequest(url string, payload map[string]interface{}) (Response, erro
 }
 
 type OllamaAgent struct {
-	Url string
+	Url   string
+	Model string
 }
 
-func (o OllamaAgent) Query(query string) string {
+func (o *OllamaAgent) Query(query string) string {
 	payload := map[string]interface{}{
-		"model":  "llama3",
+		"model":  o.Model,
 		"prompt": query,
 		"stream": false,
 	}
@@ -79,4 +81,13 @@ func (o OllamaAgent) Query(query string) string {
 	}
 	return response.Response
 
+}
+
+func (o *OllamaAgent) ShouldRespond(query string) bool {
+	query = strings.TrimSpace(query)
+	return strings.HasPrefix(query, "@larry")
+}
+
+func (o *OllamaAgent) AddToMessages(message ChatMessage) {
+	// Do nothing
 }

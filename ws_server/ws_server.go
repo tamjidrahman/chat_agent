@@ -3,8 +3,8 @@ package ws_server
 import (
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/websocket"
 	"github.com/tamjidrahman/chat_agent/chat_agent"
@@ -17,7 +17,7 @@ var upgrader = websocket.Upgrader{
 }
 
 var clients = make(map[*websocket.Conn]bool)
-var broadcast = make(chan chat_agent.Message)
+var broadcast = make(chan chat_agent.ChatMessage)
 
 func Serve(chatAgent chat_agent.ChatAgent) {
 	http.HandleFunc("/", serveHome)
@@ -35,7 +35,7 @@ func Serve(chatAgent chat_agent.ChatAgent) {
 
 // serveHome serves the HTML page
 func serveHome(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := ioutil.ReadFile("./template.html")
+	tmpl, err := os.ReadFile("./template.html")
 	if err != nil {
 		http.Error(w, "Could not read template file"+err.Error(), http.StatusInternalServerError)
 		return
@@ -68,7 +68,7 @@ func handleConnections(chatAgent chat_agent.ChatAgent, w http.ResponseWriter, r 
 	clients[conn] = true
 
 	for {
-		var msg chat_agent.Message
+		var msg chat_agent.ChatMessage
 		err := conn.ReadJSON(&msg)
 		if err != nil {
 			fmt.Println(err)
@@ -76,9 +76,12 @@ func handleConnections(chatAgent chat_agent.ChatAgent, w http.ResponseWriter, r 
 			return
 		}
 		broadcast <- msg
-		response := (chatAgent).Query(msg.Message)
-		fmt.Println("Response: ", response)
-		broadcast <- chat_agent.Message{Username: "Chat Agent", Message: response}
+		chatAgent.AddToMessages(msg)
+		if (chatAgent).ShouldRespond(msg.Message) {
+			response := (chatAgent).Query(msg)
+			fmt.Println("Response: ", response)
+			broadcast <- response
+		}
 	}
 }
 
