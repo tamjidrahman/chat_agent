@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat with Larry</title>
     <script src="https://unpkg.com/htmx.org@1.5.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -44,28 +45,36 @@
         padding: 10px;
         border-radius: 5px;
         background: #f1f1f1;
+        word-wrap: break-word;
       }
       .chat-message.username {
         background: #007bff;
         color: #fff;
+        align-self: flex-end;
+        text-align: right;
+      }
+      .chat-message .username-text {
+        font-weight: bold;
+        display: block;
       }
       #chat-form {
         display: flex;
         padding: 20px;
         background: #f9f9f9;
         flex-shrink: 0; /* Prevents the form from shrinking */
+        flex-direction: column; /* Column layout on small screens */
+      }
+      #chat-form input,
+      #chat-form button {
+        margin-bottom: 10px; /* Margin between form elements */
       }
       #username,
       #message {
-        flex: 1;
         padding: 10px;
         border: 1px solid #ddd;
         border-radius: 4px;
-        margin-right: 10px;
-      }
-      #message {
-        flex: 3;
-        margin-right: 0; /* Remove margin-right for the last flex item */
+        width: 100%;
+        box-sizing: border-box;
       }
       button {
         padding: 10px 20px;
@@ -74,9 +83,28 @@
         color: #fff;
         border-radius: 4px;
         cursor: pointer;
+        width: 100%; /* Full width button */
+        box-sizing: border-box;
       }
       button:hover {
         background: #0056b3;
+      }
+      @media (min-width: 600px) {
+        #chat-form {
+          flex-direction: row; /* Row layout on larger screens */
+        }
+        #username,
+        #message {
+          flex: 1;
+          margin-right: 10px; /* Margin between input fields on larger screens */
+        }
+        #message {
+          flex: 3;
+        }
+        button {
+          margin-right: 0; /* Remove margin for button on larger screens */
+          width: auto; /* Default width for button on larger screens */
+        }
       }
     </style>
   </head>
@@ -110,8 +138,9 @@
       const chatForm = document.getElementById("chat-form");
       const messageInput = document.getElementById("message");
       const usernameInput = document.getElementById("username");
+      const converter = new showdown.Converter();
 
-      const ws = new WebSocket("{{ .WebSocketURL }}");
+      const ws = new WebSocket(`ws://${window.location.host}/ws`);
 
       ws.onmessage = function (event) {
         const msg = JSON.parse(event.data);
@@ -120,7 +149,7 @@
         if (msg.username === usernameInput.value) {
           message.classList.add("username");
         }
-        message.textContent = `${msg.username}: ${msg.message}`;
+        message.innerHTML = `<span class="username-text">${msg.username}</span> ${converter.makeHtml(msg.message)}`;
         chatLog.appendChild(message);
         chatLog.scrollTop = chatLog.scrollHeight;
       };
