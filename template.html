@@ -8,9 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
     <style>
       body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #e0f7fa; /* Light Cyan background */
-        color: #004d40; /* Dark Teal text */
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #E0F7FA; /* Light Cyan background */
+        color: #004D40; /* Dark Teal text */
         display: flex;
         justify-content: center;
         align-items: center;
@@ -21,7 +21,7 @@
         width: 90%;
         max-width: 600px;
         height: 80vh;
-        background: #ffffff; /* White background */
+        background: #FFFFFF; /* White background */
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
         border-radius: 10px;
         display: flex;
@@ -29,8 +29,8 @@
         overflow: hidden;
       }
       .chat-header {
-        background: #00838f; /* Dark Cyan background */
-        color: #ffffff; /* White text */
+        background: #00838F; /* Dark Cyan background */
+        color: #FFFFFF; /* White text */
         padding: 15px;
         text-align: center;
         font-size: 1.5em;
@@ -40,19 +40,19 @@
         flex: 1;
         padding: 20px;
         overflow-y: auto;
-        border-bottom: 1px solid #b2ebf2; /* Light Cyan border */
+        border-bottom: 1px solid #B2EBF2; /* Light Cyan border */
       }
       .chat-message {
         margin-bottom: 10px;
         padding: 10px;
         border-radius: 8px;
-        background: #b2ebf2; /* Light Cyan background */
+        background: #B2EBF2; /* Light Cyan background */
         word-wrap: break-word;
-        color: #004d40; /* Dark Teal text */
+        color: #004D40; /* Dark Teal text */
       }
       .chat-message.username {
-        background: #00838f; /* Dark Cyan background */
-        color: #ffffff; /* White text */
+        background: #00838F; /* Dark Cyan background */
+        color: #FFFFFF; /* White text */
         align-self: flex-end;
         text-align: right;
       }
@@ -64,7 +64,7 @@
       #chat-form {
         display: flex;
         padding: 20px;
-        background: #b2ebf2; /* Light Cyan background */
+        background: #B2EBF2; /* Light Cyan background */
         flex-shrink: 0;
         flex-direction: column;
       }
@@ -80,10 +80,10 @@
       }
       #username {
         padding: 10px;
-        border: 1px solid #004d40; /* Dark Teal border */
+        border: 1px solid #004D40; /* Dark Teal border */
         border-radius: 4px;
-        background: #e0f7fa; /* Light Cyan background */
-        color: #004d40; /* Dark Teal text */
+        background: #E0F7FA; /* Light Cyan background */
+        color: #004D40; /* Dark Teal text */
         width: 100%;
         box-sizing: border-box;
       }
@@ -94,18 +94,18 @@
       }
       #message {
         padding: 10px;
-        border: 1px solid #004d40; /* Dark Teal border */
+        border: 1px solid #004D40; /* Dark Teal border */
         border-radius: 4px;
-        background: #e0f7fa; /* Light Cyan background */
-        color: #004d40; /* Dark Teal text */
+        background: #E0F7FA; /* Light Cyan background */
+        color: #004D40; /* Dark Teal text */
         width: 100%;
         box-sizing: border-box;
       }
       button {
         padding: 10px 20px;
-        background: #00838f; /* Dark Cyan background */
+        background: #00838F; /* Dark Cyan background */
         border: none;
-        color: #ffffff; /* White text */
+        color: #FFFFFF; /* White text */
         border-radius: 4px;
         cursor: pointer;
         width: 100%;
@@ -142,14 +142,16 @@
   </head>
   <body>
     <div class="chat-container">
-      <div class="chat-header">Chat with Larry</div>
-        <div id="chat-log">
-          {{range .ChatMessages}}
-            <div class="chat-message{{if eq .Username "currentUser"}} username{{end}}">
-              <span class="username-text">{{.Username}}:</span> {{.Message}}
-            </div>
-          {{end}}
-        </div>
+      <div class="chat-header">
+        Chat with Larry
+      </div>
+      <div id="chat-log">
+        {{range .ChatMessages}}
+          <div class="chat-message{{if eq .Username "currentUser"}} username{{end}}">
+            <span class="username-text">{{.Username}}:</span> {{.Message}}
+          </div>
+        {{end}}
+      </div>
       <form id="chat-form">
         <div id="username-container">
           <input
@@ -210,11 +212,14 @@
       };
 
       atLarryButton.onclick = function () {
-        const msg = {
-          username: usernameInput.value,
-          message: "@larry",
-        };
-        ws.send(JSON.stringify(msg));
+        if (usernameInput.value.trim() !== "") {
+          const msg = {
+            username: usernameInput.value,
+            message: "@larry " + messageInput.value,
+          };
+          ws.send(JSON.stringify(msg));
+          messageInput.value = "";
+        }
       };
 
       chatForm.onsubmit = function (event) {
