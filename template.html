@@ -143,9 +143,13 @@
   <body>
     <div class="chat-container">
       <div class="chat-header">Chat with Larry</div>
-      <div id="chat-log">
-        <!-- Messages will be displayed here -->
-      </div>
+        <div id="chat-log">
+          {{range .ChatMessages}}
+            <div class="chat-message{{if eq .Username "currentUser"}} username{{end}}">
+              <span class="username-text">{{.Username}}:</span> {{.Message}}
+            </div>
+          {{end}}
+        </div>
       <form id="chat-form">
         <div id="username-container">
           <input

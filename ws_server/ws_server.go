@@ -20,9 +20,11 @@ var clients = make(map[*websocket.Conn]bool)
 var broadcast = make(chan chat_agent.ChatMessage)
 
 func Serve(chatAgent chat_agent.ChatAgent) {
-	http.HandleFunc("/", serveHome)
+	conversation := chat_agent.ChatCoversation{ChatMessages: []chat_agent.ChatMessage{}}
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) { handleConnections(chatAgent, w, r) })
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { serveHome(&conversation, w, r) })
+
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) { handleConnections(&conversation, chatAgent, w, r) })
 
 	go handleMessages()
 
@@ -34,7 +36,7 @@ func Serve(chatAgent chat_agent.ChatAgent) {
 }
 
 // serveHome serves the HTML page
-func serveHome(w http.ResponseWriter, r *http.Request) {
+func serveHome(conversation *chat_agent.ChatCoversation, w http.ResponseWriter, r *http.Request) {
 	tmpl, err := os.ReadFile("./template.html")
 	if err != nil {
 		http.Error(w, "Could not read template file"+err.Error(), http.StatusInternalServerError)
@@ -43,21 +45,25 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 
 	t, err := template.New("home").Parse(string(tmpl))
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Could not parse template", http.StatusInternalServerError)
 		return
 	}
 
 	err = t.Execute(w, struct {
 		WebSocketURL string
+		ChatMessages []chat_agent.ChatMessage
 	}{
 		WebSocketURL: "ws://" + r.Host + "/ws",
+		ChatMessages: conversation.ChatMessages,
 	})
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Could not execute template", http.StatusInternalServerError)
 	}
 }
 
-func handleConnections(chatAgent chat_agent.ChatAgent, w http.ResponseWriter, r *http.Request) {
+func handleConnections(chatConversation *chat_agent.ChatCoversation, chatAgent chat_agent.ChatAgent, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err)
@@ -75,11 +81,13 @@ func handleConnections(chatAgent chat_agent.ChatAgent, w http.ResponseWriter, r 
 			delete(clients, conn)
 			return
 		}
+		chatConversation.AddMessage(msg)
 		broadcast <- msg
-		chatAgent.AddToMessages(msg)
+		chatAgent.AddToMessages(msg) // Should just read from conversation
 		if (chatAgent).ShouldRespond(msg.Message) {
 			response := (chatAgent).Query(msg)
 			fmt.Println("Response: ", response)
+			chatConversation.AddMessage(response)
 			broadcast <- response
 		}
 	}

@@ -1,5 +1,7 @@
 package chat_agent
 
+import "sync"
+
 type ChatAgent interface {
 	Query(ChatMessage) ChatMessage
 	ShouldRespond(string) bool
@@ -9,6 +11,17 @@ type ChatAgent interface {
 type ChatMessage struct {
 	Username string `json:"username"`
 	Message  string `json:"message"`
+}
+
+type ChatCoversation struct {
+	ChatMessages []ChatMessage `json:"messages"`
+	mutex        sync.Mutex
+}
+
+func (c *ChatCoversation) AddMessage(message ChatMessage) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.ChatMessages = append(c.ChatMessages, message)
 }
 
 type MockChatAgent struct{}
