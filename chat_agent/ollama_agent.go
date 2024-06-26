@@ -69,22 +69,33 @@ type OllamaAgent struct {
 	Model string
 }
 
-func (o *OllamaAgent) Query(query string) string {
+func (o *OllamaAgent) createPromptFromConversation(conversation *ChatConversation) string {
+	prompt := "You're an assistant. Do your best to help Tamjid and Laura with their logistics!"
+	for _, message := range conversation.ChatMessages {
+
+		prompt_addend := fmt.Sprintf("%s: %s", message.Username, message.Message)
+		prompt += prompt_addend + "\n"
+	}
+	return prompt
+}
+func (o *OllamaAgent) Query(chatConversation *ChatConversation) ChatMessage {
 	payload := map[string]interface{}{
 		"model":  o.Model,
-		"prompt": query,
+		"prompt": o.createPromptFromConversation(chatConversation),
 		"stream": false,
 	}
 	response, err := generateRequest(o.Url, payload)
 	if err != nil {
-		return fmt.Sprintf("Error: %s", err)
+		fmt.Printf("Error: %s", err)
+		return ChatMessage{Username: "OllamaLarry", Message: "I'm sorry, I'm having trouble understanding you right now."}
 	}
-	return response.Response
+	return ChatMessage{Username: "OllamaLarry", Message: response.Response}
 
 }
 
-func (o *OllamaAgent) ShouldRespond(query string) bool {
-	query = strings.TrimSpace(query)
+func (o *OllamaAgent) ShouldRespond(chatConversation *ChatConversation) bool {
+	lastMessage := chatConversation.ChatMessages[len(chatConversation.ChatMessages)-1]
+	query := strings.TrimSpace(lastMessage.Message)
 	return strings.HasPrefix(query, "@larry")
 }
 
