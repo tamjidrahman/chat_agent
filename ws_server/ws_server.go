@@ -18,12 +18,12 @@ var upgrader = websocket.Upgrader{
 
 var clients = make(map[*websocket.Conn]bool)
 
-func Serve(chatAgent chat_agent.ChatAgent) {
+func Serve(chatAgents []chat_agent.ChatAgent) {
 	conversation := chat_agent.ChatConversation{ChatMessages: []chat_agent.ChatMessage{}}
 	conversationHandler := newWSConversationHandler(&conversation)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { serveHome(conversationHandler, w, r) })
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) { handleConnections(conversationHandler, chatAgent, w, r) })
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) { handleConnections(conversationHandler, chatAgents, w, r) })
 
 	go handleMessages(conversationHandler.GetBroadcast())
 
@@ -62,7 +62,7 @@ func serveHome(conversationHandler ConversationHandler, w http.ResponseWriter, r
 	}
 }
 
-func handleConnections(conversationHandler ConversationHandler, chatAgent chat_agent.ChatAgent, w http.ResponseWriter, r *http.Request) {
+func handleConnections(conversationHandler ConversationHandler, chatAgents []chat_agent.ChatAgent, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err)
@@ -81,9 +81,19 @@ func handleConnections(conversationHandler ConversationHandler, chatAgent chat_a
 			return
 		}
 		conversationHandler.AddMessage(msg)
-		if (chatAgent).ShouldRespond(conversationHandler.GetConversation()) {
-			response := (chatAgent).Query(conversationHandler.GetConversation())
-			conversationHandler.AddMessage(response)
+		agendShouldRespond := map[chat_agent.ChatAgent]bool{}
+		// Check if any agent should respond, but do this first so they don't interfere with each other
+		for _, chatAgent := range chatAgents {
+			fmt.Println("Checking if agent should respond")
+			agendShouldRespond[chatAgent] = chatAgent.ShouldRespond(conversationHandler.GetConversation())
+		}
+		// Now that we know which agents should respond, we can query them
+		for _, chatAgent := range chatAgents {
+			if agendShouldRespond[chatAgent] {
+				fmt.Println("Agent should respond")
+				response := (chatAgent).Query(conversationHandler.GetConversation())
+				conversationHandler.AddMessage(response)
+			}
 		}
 	}
 }

@@ -56,7 +56,12 @@ func (client *OpenAIClient) CreateOpenAIMessages(chatConversation *ChatConversat
 	var openAIMessages []OpenAIMessage
 	openAIMessages = append(openAIMessages, OpenAIMessage{Role: "system", Content: client.Prompt})
 	for _, msg := range chatConversation.ChatMessages {
-		openAIMessages = append(openAIMessages, OpenAIMessage{Role: "user", Content: msg.Username + ": " + msg.Message})
+		role := "user"
+		if msg.Username == "Larry" {
+			role = "assistant"
+		}
+		openAIMessages = append(openAIMessages, OpenAIMessage{Role: role, Content: msg.Username + ": " + msg.Message})
+
 	}
 	return openAIMessages
 }
