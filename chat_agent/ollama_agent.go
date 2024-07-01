@@ -98,7 +98,3 @@ func (o *OllamaAgent) ShouldRespond(chatConversation *ChatConversation) bool {
 	query := strings.TrimSpace(lastMessage.Message)
 	return strings.HasPrefix(query, "@larry")
 }
-
-func (o *OllamaAgent) AddToMessages(message ChatMessage) {
-	// Do nothing
-}
